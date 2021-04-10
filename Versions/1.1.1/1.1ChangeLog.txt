@@ -1,0 +1,6 @@
+-Added save file function as isbn.
+-Only requests data once per isbn now.
+-Added return statement for all bitmap data.
+-Fixed the empty dictionary return.
+-Removed GoogleApiKey.
+-Other Minor Things.
