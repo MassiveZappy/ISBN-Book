@@ -1,0 +1,10 @@
+-MAJOR CHANGES:
+--New and improved List input!
+--Now prints output to a yaml file (An alt to json, expect more changes to files later).
+
+-Minor changes:
+--Various performance improvements due to a re-write.
+--Now returns false if a author is not found.
+--Now has another segment in the return data and inside of thebook to see if there was a match.
+
+-Cleaned up the file
