@@ -1,0 +1,105 @@
+import sys
+import os
+import time
+import requests
+import yaml
+import json
+import orcid
+
+from requests import RequestException
+
+
+#INPUTS
+#['Isbn','Isbn']'
+try:
+    print('Looking for IsbnInput.json')
+    with open("IsbnInput.json", "r+") as f:
+        try:
+            input = json.load(f)
+        except:
+            print('File Is corrupted or incorrectly formatted.')
+            print('File Must contain json input')
+            print('File is supposed to be formatted:')
+            print('Dictionary')
+            print('  Items:["Isbn1", "Isbn2"]')
+            print('  OpenLibKey:"key"')
+except:
+    print('No IsbnInput.json file found')
+    print('Creating.')
+    with open('IsbnInput.json', "w+") as f:
+        json.dump({'Items': input('Input Isbn: Isbn1, Isbn2, ect...>').replace("[", "").replace("]", "").split(','), 'OpenLibKey': input('OpenLib API Key>')},f)
+        print('Creating..')
+
+
+
+#OUTPUTS:
+# ---Json---r `21q  `1Q AZ`
+# {
+# 'Imgs':{
+# 'Google':'https://...',
+# 'OpenLib':'https://...'}
+# 'Authors':[
+# ['Author1', 'GoogleScholar'],
+# ['Author2', 'GoogleScholar'],
+# ['Author3', 'GoogleScholar'],
+# ['Author4', 'GoogleScholar'],
+# ['Author5', 'GoogleScholar']]
+# }
+#
+#
+# ---If It fails---
+#Returns False for the item.
+
+class google:
+    class googleBooks:
+        def ApiFetch(isbn):
+            return requests.get(f'https://www.googleapis.com/books/v1/volumes?q=isbn%3D{isbn}').json()
+        def FindVolumeInfo(isbn, apiRequest):
+            try:
+                items = apiRequest['items']
+            except:
+                return False
+            for item in items:
+                for req in item['volumeInfo']['industryIdentifiers']:
+                    if req['identifier'] == isbn:
+                        return item['volumeInfo']
+            return False
+        def FindImg(volumeInfo : dict):
+            try:
+                return volumeInfo['imageLinks']['thumbnail']
+            except:
+                try:
+                    return volumeInfo['imageLinks']['smallThumbnail']
+                except:
+                    return False
+        def FindAuthors(volumeInfo : dict):
+            try:
+                return volumeInfo['authors']
+            except:
+                return False
+class openLib:
+    def GetImgURL(isbn, key):
+        isbn = str(isbn)
+        if str(requests.get(f"http://covers.openlibrary.org/b/{key}/{isbn}-L.jpg").content == "b'GIF89a\x01\x00\x01\x00\xf7\x00\x00\x00\x00\x00\x00\x003\x00\x00f\x00\x00\x99\x00\x00\xcc\x00\x00\xff3\x00\x003\x0033\x00f3\x00\x993\x00\xcc3\x00\xfff\x00\x00f\x003f\x00ff\x00\x99f\x00\xccf\x00\xff\x99\x00\x00\x99\x003\x99\x00f\x99\x00\x99\x99\x00\xcc\x99\x00\xff\xcc\x00\x00\xcc\x003\xcc\x00f\xcc\x00\x99\xcc\x00\xcc\xcc\x00\xff\xff\x00\x00\xff\x003\xff\x00f\xff\x00\x99\xff\x00\xcc\xff\x00\xff\x003\x00\x0033\x003f\x003\x99\x003\xcc\x003\xff33\x0033333f33\x9933\xcc33\xfff3\x00f33f3ff3\x99f3\xccf3\xff\x993\x00\x9933\x993f\x993\x99\x993\xcc\x993\xff\xcc3\x00\xcc33\xcc3f\xcc3\x99\xcc3\xcc\xcc3\xff\xff3\x00\xff33\xff3f\xff3\x99\xff3\xcc\xff3\xff\x00f\x00\x00f3\x00ff\x00f\x99\x00f\xcc\x00f\xff3f\x003f33ff3f\x993f\xcc3f\xffff\x00ff3fffff\x99ff\xccff\xff\x99f\x00\x99f3\x99ff\x99f\x99\x99f\xcc\x99f\xff\xccf\x00\xccf3\xccff\xccf\x99\xccf\xcc\xccf\xff\xfff\x00\xfff3\xffff\xfff\x99\xfff\xcc\xfff\xff\x00\x99\x00\x00\x993\x00\x99f\x00\x99\x99\x00\x99\xcc\x00\x99\xff3\x99\x003\x9933\x99f3\x99\x993\x99\xcc3\x99\xfff\x99\x00f\x993f\x99ff\x99\x99f\x99\xccf\x99\xff\x99\x99\x00\x99\x993\x99\x99f\x99\x99\x99\x99\x99\xcc\x99\x99\xff\xcc\x99\x00\xcc\x993\xcc\x99f\xcc\x99\x99\xcc\x99\xcc\xcc\x99\xff\xff\x99\x00\xff\x993\xff\x99f\xff\x99\x99\xff\x99\xcc\xff\x99\xff\x00\xcc\x00\x00\xcc3\x00\xccf\x00\xcc\x99\x00\xcc\xcc\x00\xcc\xff3\xcc\x003\xcc33\xccf3\xcc\x993\xcc\xcc3\xcc\xfff\xcc\x00f\xcc3f\xccff\xcc\x99f\xcc\xccf\xcc\xff\x99\xcc\x00\x99\xcc3\x99\xccf\x99\xcc\x99\x99\xcc\xcc\x99\xcc\xff\xcc\xcc\x00\xcc\xcc3\xcc\xccf\xcc\xcc\x99\xcc\xcc\xcc\xcc\xcc\xff\xff\xcc\x00\xff\xcc3\xff\xccf\xff\xcc\x99\xff\xcc\xcc\xff\xcc\xff\x00\xff\x00\x00\xff3\x00\xfff\x00\xff\x99\x00\xff\xcc\x00\xff\xff3\xff\x003\xff33\xfff3\xff\x993\xff\xcc3\xff\xfff\xff\x00f\xff3f\xffff\xff\x99f\xff\xccf\xff\xff\x99\xff\x00\x99\xff3\x99\xfff\x99\xff\x99\x99\xff\xcc\x99\xff\xff\xcc\xff\x00\xcc\xff3\xcc\xfff\xcc\xff\x99\xcc\xff\xcc\xcc\xff\xff\xff\xff\x00\xff\xff3\xff\xfff\xff\xff\x99\xff\xff\xcc\xff\xff\xff\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00!\xf9\x04\x01\x00\x00\xd7\x00,\x00\x00\x00\x00\x01\x00\x01\x00\x00\x08\x04\x00\xaf\x05\x04\x00;'"):
+            return False
+        return f"http://covers.openlibrary.org/b/{key}/{isbn}-L.jpg"
+
+
+Output = {}
+for item in input.get('Items'):
+    api = google.googleBooks.ApiFetch(item)
+    Output[item] = {
+        'Imgs': {
+            'Google':google.googleBooks.FindImg(google.googleBooks.FindVolumeInfo(item, api)),
+            'OpenLib': openLib.GetImgURL(item, input['OpenLibKey'])
+        },
+        'Authors':[]
+    }
+    if google.googleBooks.FindAuthors(google.googleBooks.FindVolumeInfo(item, api)):
+        for author in google.googleBooks.FindAuthors(google.googleBooks.FindVolumeInfo(item, api)):
+            Output[item]['Authors'].append({'Author': author, 'GoogleScholar':'TODO', 'Orcid':'TODO'})#TODO Add these methods/functions.
+
+print(Output)
+with open("IsbnOutput.json" ,"w+") as f:
+    json.dump(Output, f)
+

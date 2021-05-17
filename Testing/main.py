@@ -11,7 +11,7 @@ Isbns = ['9781975173449','9781608316571','9780781778718']
 #extra isbn '9780781778718'
 
 
-if sys.version_info[0] < 3 and sys.version_info[1] < 7:
+if not sys.version_info[0] <= 3 and sys.version_info[1] > 6:
     raise Exception("Must be using Python 3.7+ for script to run as it contains f-strings.\nMust also have \"requests\" library installed.")
 
 def DictExits(VarToTest, Var):
@@ -37,17 +37,21 @@ def IsbnConvert(isbn):
                 if LoopVar['volumeInfo']['industryIdentifiers'][1]['identifier'] == CurrentIsbn:
                     print(f"Match:{LoopVar['volumeInfo']['industryIdentifiers'][1]['identifier']}")
                     TempOut['TheBook'] ={
-                    'Title': LoopVar['volumeInfo']['title'],
-                    'Description': DictExits(LoopVar['volumeInfo'], 'description')[1],
-                    'PublishingDate': LoopVar['volumeInfo']['publishedDate'],
-                    'Img': requests.get(LoopVar['volumeInfo']['imageLinks']['thumbnail']).content,
-                    'Isbn': LoopVar['volumeInfo']['industryIdentifiers'],
-                    'Index': count
+                        'Title': LoopVar['volumeInfo']['title'],
+                        'Description': DictExits(LoopVar['volumeInfo'], 'description')[1],
+                        'PublishingDate': LoopVar['volumeInfo']['publishedDate'],
+                        'GoogleImg': requests.get(LoopVar['volumeInfo']['imageLinks']['thumbnail']).content,
+                        'Isbn': LoopVar['volumeInfo']['industryIdentifiers'],
+                        'Index': count
                     }
                     if not DictExits(LoopVar['volumeInfo'], 'imageLinks')[0]:
-                        TempOut['TheBook']['Img'] = False
+                        TempOut['TheBook']['GoogleImg'] = False
                     elif DictExits(LoopVar['volumeInfo'], 'imageLinks')[0]:
-                        TempOut['TheBook']['Img'] = requests.get(LoopVar['volumeInfo']['imageLinks']['thumbnail']).content
+                        TempOut['TheBook']['GoogleImg'] = requests.get(LoopVar['volumeInfo']['imageLinks']['thumbnail']).content
+                        #TODO
+                        with open(f'{CurrentIsbn}-google.jpg', 'wb') as f:
+                            f.write(TempOut['TheBook']['GoogleImg'])
+                            f.close()
                     if not DictExits(LoopVar['volumeInfo'], 'authors')[0]:
                         TempOut['TheBook']['Authors'] = False
                     elif DictExits(LoopVar['volumeInfo'], 'authors')[0]:
@@ -63,10 +67,9 @@ def IsbnConvert(isbn):
                         'Index': count
                     })
                     if not DictExits(LoopVar['volumeInfo'], 'imageLinks')[0]:
-                        TempOut['RelatedBooks'][len(TempOut) - 1]['Img'] = False
+                        TempOut['RelatedBooks'][len(TempOut) - 1]['GoogleImg'] = False
                     elif DictExits(LoopVar['volumeInfo'], 'imageLinks')[0]:
-                        TempOut['RelatedBooks'][len(TempOut) - 1]['Img'] = requests.get(
-                            LoopVar['volumeInfo']['imageLinks']['thumbnail']).content
+                        TempOut['RelatedBooks'][len(TempOut) - 1]['GoogleImg'] = requests.get(LoopVar['volumeInfo']['imageLinks']['thumbnail']).content
                     if not DictExits(LoopVar['volumeInfo'], 'authors')[0]:
                         TempOut['RelatedBooks'][len(TempOut) - 1]['Authors'] = False
                     elif DictExits(LoopVar['volumeInfo'], 'authors')[0]:
@@ -85,31 +88,36 @@ def IsbnConvert(isbn):
                         'Index': count
                     }
                     if not DictExits(LoopVar['volumeInfo'], 'imageLinks')[0]:
-                        TempOut['TheBook']['Img'] = False
+                        TempOut['TheBook']['GoogleImg'] = False
                     elif DictExits(LoopVar['volumeInfo'], 'imageLinks')[0]:
-                        TempOut['TheBook']['Img'] = requests.get(LoopVar['volumeInfo']['imageLinks']['thumbnail']).content
+                        TempOut['TheBook']['GoogleImg'] = requests.get(LoopVar['volumeInfo']['imageLinks']['thumbnail']).content
+                        #TODO
+                        with open(f'{CurrentIsbn}.jpg', 'wb') as f:
+                            f.write(TempOut['TheBook']['GoogleImg'])
+                            f.close()
                     if not DictExits(LoopVar['volumeInfo'], 'authors')[0]:
                         TempOut['TheBook']['Authors'] = False
                     elif DictExits(LoopVar['volumeInfo'], 'authors')[0]:
                         TempOut['TheBook']['Authors'] = LoopVar['volumeInfo']['authors']
+
                 else:
                     TempOut['RelatedBooks'].append({
                         'Title': LoopVar['volumeInfo']['title'],
                         'Description': DictExits(LoopVar['volumeInfo'], 'description')[1],
-                        'Authors': LoopVar['volumeInfo']['authors'],
                         'PublishingDate': LoopVar['volumeInfo']['publishedDate'],
                         'ImgLink': DictExits(LoopVar['volumeInfo'], 'imageLinks')[1],
                         'Isbn': LoopVar['volumeInfo']['industryIdentifiers'],
                         'Index': count
                     })
                     if not DictExits(LoopVar['volumeInfo'], 'imageLinks')[0]:
-                        TempOut['RelatedBooks'][len(TempOut)-1]['Img'] = False
+                        TempOut['RelatedBooks'][len(TempOut)-1]['GoogleImg'] = False
                     elif DictExits(LoopVar['volumeInfo'], 'imageLinks')[0]:
-                        TempOut['RelatedBooks'][len(TempOut) - 1]['Img'] = requests.get(LoopVar['volumeInfo']['imageLinks']['thumbnail']).content
+                        TempOut['RelatedBooks'][len(TempOut) - 1]['GoogleImg'] = requests.get(LoopVar['volumeInfo']['imageLinks']['thumbnail']).content
                     if not DictExits(LoopVar['volumeInfo'], 'authors')[0]:
                         TempOut['RelatedBooks'][len(TempOut) - 1]['Authors'] = False
                     elif DictExits(LoopVar['volumeInfo'], 'authors')[0]:
                         TempOut['RelatedBooks'][len(TempOut) - 1]['Authors'] = LoopVar['volumeInfo']['authors']
+
 
 
 
@@ -165,8 +173,8 @@ def IsbnConvert(isbn):
 ImgName = "out"
 IsbnsConv = IsbnConvert(Isbns)
 print(IsbnsConv)
-with open(f'{ImgName}.yml', 'w') as f:
-    doc = yaml.dump(IsbnsConv, f)
+with open(f'{ImgName}.json', 'w') as f:
+    f.write(json.dump(IsbnsConv, f))
     f.close()
 
 
@@ -176,9 +184,6 @@ with open(f'{ImgName}.yml', 'w') as f:
 # except:
 #     ImgName = IsbnDict['TheBook']['Isbn'][0]['identifier']
 #
-# with open(f'{ImgName}.jpg', 'wb') as f:
-#     f.write(IsbnDict['TheBook']['Img'])
-#     f.close()
 # with open(f'{ImgName}.yml', 'w') as f:
 #     doc = yaml.dump(IsbnDict, f)
 #     f.close()
